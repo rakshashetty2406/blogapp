@@ -1,30 +1,45 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_cors import CORS
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-# In-memory list to store posts
-posts_data = []
+# In-memory storage
+posts = []
 
-@app.route('/')
-def home():
-    return render_template('index.html')
+# Serve homepage
+@app.route("/")
+def serve_homepage():
+    return send_from_directory(".", "index.html")
 
-@app.route('/posts', methods=['GET', 'POST'])
-def posts():
-    if request.method == 'POST':
+# Serve CSS
+@app.route("/style.css")
+def serve_css():
+    return send_from_directory(".", "style.css")
+
+# Serve JS
+@app.route("/script.js")
+def serve_js():
+    return send_from_directory(".", "script.js")
+
+# API to get all posts or add a new post
+@app.route("/posts", methods=["GET", "POST"])
+def handle_posts():
+    if request.method == "POST":
         data = request.get_json()
-        posts_data.append(data)
-        return jsonify({"message": "Post added", "data": data})
-    return jsonify(posts_data)
+        posts.append(data)
+        return jsonify({"message": "Post added", "data": data}), 201
+    return jsonify(posts)
 
-@app.route('/posts/<int:index>', methods=['DELETE'])
+# Delete a post by index
+@app.route("/posts/<int:index>", methods=["DELETE"])
 def delete_post(index):
-    if 0 <= index < len(posts_data):
-        removed = posts_data.pop(index)
+    if 0 <= index < len(posts):
+        removed = posts.pop(index)
         return jsonify({"message": "Deleted", "data": removed})
     return jsonify({"error": "Invalid index"}), 400
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000)
+# Run the app
+if __name__ == "__main__":
+    app.run(debug=True)
